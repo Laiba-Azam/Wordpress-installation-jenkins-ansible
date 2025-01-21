@@ -1,0 +1,56 @@
+---
+- hosts: all
+  become: true
+  vars:
+    db_name: "{{ db_name }}"
+    db_user: "{{ db_user }}"
+    db_password: "{{ db_password }}"
+  tasks:   
+    - name: unarchive wordpress file
+      unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /var/www/html/
+        remote_src: yes
+    - name: Create mysql user for wordpress
+      mysql_db:
+        name:  "{{ db_name }}"
+        state: present
+        login_user: root
+        login_unix_socket: "/run/mysqld/mysqld.sock"
+    - name: create wordpress user 
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        state: present
+        login_user: root
+        login_unix_socket: "/run/mysqld/mysqld.sock"
+    - name: Set up wp-config
+      template:
+        src: "templates/wp-config.php.j2"
+        dest: "/var/www/html/wordpress/wp-config.php"
+      tags: [ wordpress ]
+    - name: change wordpress file permission
+      file:
+        path: /var/www/html/wordpress
+        owner: 'www-data'
+        group: 'www-data'
+        recurse: yes
+        mode: '0775'    
+    - name: Configuring wordpress file with apache
+      template:
+        src: "wordpress.conf"
+        dest: "/etc/apache2/sites-available/wordpress.conf"
+      notify: restart apache2
+    - name: enable wordpress.conf
+      shell: /usr/sbin/a2ensite wordpress.conf
+      notify: reload apache2
+  handlers:
+    - name: restart apache2
+      service:
+        name: apache2
+        state: restarted
+    - name: reload apache2
+      service:
+        name: apache2
+        state: reloaded

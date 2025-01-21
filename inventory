@@ -1,0 +1,4 @@
+[vm]
+vm2@10.0.0.198
+[local]
+localhost ansible_connection=local
