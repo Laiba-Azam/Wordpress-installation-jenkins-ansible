@@ -1,0 +1,7 @@
+cd /home/vm1/task
+pwd
+whoami
+db_name=${db_name}
+db_user=${db_user}
+db_password=${db_password}
+sudo ansible-playbook --extra-vars "db_name=${db_name} db_user=${db_user} db_password=${db_password}" wordpress.yml
